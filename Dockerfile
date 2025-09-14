@@ -1,41 +1,39 @@
-# Frontend build stage
-FROM node:20-alpine AS frontend-deps
-WORKDIR /app
-COPY apps/web/package.json ./
-RUN npm install
+# Simple multi-service Dockerfile for development
+FROM node:20-alpine
 
-FROM node:20-alpine AS frontend-builder
-WORKDIR /app
-COPY apps/web ./
-COPY --from=frontend-deps /app/node_modules ./node_modules
-RUN npm run build
+RUN apk add --no-cache python3 make g++ bash
 
-FROM node:20-alpine AS frontend
 WORKDIR /app
-COPY --from=frontend-builder /app/.next ./.next
-COPY --from=frontend-builder /app/public ./public
-COPY --from=frontend-builder /app/package.json ./
-COPY --from=frontend-builder /app/node_modules ./node_modules
-EXPOSE 3000
-CMD ["npm", "start"]
 
-# Backend build stage
-FROM node:20-alpine AS backend-deps
-WORKDIR /app
-COPY apps/server/package.json ./
-RUN npm install
+# Copy package files
+COPY package.json pnpm-workspace.yaml ./
+COPY apps/web/package.json ./apps/web/
+COPY apps/server/package.json ./apps/server/
 
-FROM node:20-alpine AS backend-builder
-WORKDIR /app
-COPY apps/server ./
-COPY --from=backend-deps /app/node_modules ./node_modules
-RUN npm run build
+# Install pnpm
+RUN npm install -g pnpm@8.15.1
 
-FROM node:20-alpine AS backend
+# Install all dependencies
+RUN pnpm install --frozen-lockfile || pnpm install
+
+# Copy source code
+COPY apps/ ./apps/
+
+# Build applications
+WORKDIR /app/apps/web
+RUN pnpm build || npm run build
+
+WORKDIR /app/apps/server
+RUN pnpm build || npm run build
+
 WORKDIR /app
-RUN apk add --no-cache python3 make g++
-COPY --from=backend-builder /app/dist ./dist
-COPY --from=backend-builder /app/package.json ./
-COPY --from=backend-builder /app/node_modules ./node_modules
-EXPOSE 3001 3002
-CMD ["node", "dist/index.js"]
+
+# Create startup script
+RUN echo '#!/bin/sh' > /start.sh && \
+    echo 'cd /app/apps/server && node dist/index.js &' >> /start.sh && \
+    echo 'cd /app/apps/web && npm start' >> /start.sh && \
+    chmod +x /start.sh
+
+EXPOSE 3000 3001 3002
+
+CMD ["/start.sh"]

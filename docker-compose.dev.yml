@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  # Development mode - using host network for simplicity
+  dev:
+    image: node:20-alpine
+    container_name: vibe-kanban-dev
+    working_dir: /app
+    network_mode: "host"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/apps/web/node_modules
+      - /app/apps/web/.next
+      - /app/apps/server/node_modules
+      - /app/apps/server/dist
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - FRONTEND_URL=http://localhost:3000
+      - NEXT_PUBLIC_WS_URL=http://localhost:3001
+      - NEXT_PUBLIC_SYNC_URL=http://localhost:3001
+      - NEXT_PUBLIC_COLLAB_WS_URL=ws://localhost:3002
+    command: |
+      sh -c "
+        apk add --no-cache python3 make g++ bash &&
+        npm install -g pnpm@8.15.1 &&
+        pnpm install &&
+        cd apps/server && pnpm dev &
+        cd apps/web && pnpm dev
+      "
+    restart: unless-stopped

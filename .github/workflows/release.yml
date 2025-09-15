@@ -1,0 +1,232 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.0.0)'
+        required: true
+        type: string
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Version: ${VERSION}"
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          cat > CHANGELOG_RELEASE.md << EOF
+          ## What's Changed
+
+          ### Features
+          - 🎨 tldraw infinite canvas with real-time collaboration
+          - 🎮 3D Model viewer embed (GLB/GLTF support)
+          - 💻 Web terminal embed with WebSocket support
+          - 📝 Collaborative document editor (Tiptap + Yjs)
+          - 🏠 Room-based collaboration system
+          - 🐳 Complete Docker deployment solution
+
+          ### Docker Images
+
+          Pull the latest images:
+          \`\`\`bash
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          \`\`\`
+
+          ### Quick Start
+
+          \`\`\`bash
+          # Using Docker Compose
+          docker compose up -d
+
+          # Using deployment script
+          ./deploy.sh build
+          \`\`\`
+
+          **Full Changelog**: https://github.com/${{ github.repository }}/commits/${{ steps.version.outputs.version }}
+          EOF
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          release_name: Release ${{ steps.version.outputs.version }}
+          body_path: CHANGELOG_RELEASE.md
+          draft: false
+          prerelease: ${{ contains(steps.version.outputs.version, 'beta') || contains(steps.version.outputs.version, 'alpha') }}
+
+  build-docker-images:
+    needs: create-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      matrix:
+        include:
+          - dockerfile: Dockerfile
+            image-suffix: ""
+          - dockerfile: Dockerfile.frontend
+            image-suffix: "-frontend"
+          - dockerfile: Dockerfile.backend
+            image-suffix: "-backend"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./${{ matrix.dockerfile }}
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}${{ matrix.image-suffix }}:${{ needs.create-release.outputs.version }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}${{ matrix.image-suffix }}:latest
+          labels: |
+            org.opencontainers.image.title=Vibe Kanban${{ matrix.image-suffix }}
+            org.opencontainers.image.description=Collaborative canvas with tldraw
+            org.opencontainers.image.version=${{ needs.create-release.outputs.version }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  create-artifacts:
+    needs: create-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8.15.1
+
+      - name: Install and Build
+        run: |
+          pnpm install --frozen-lockfile
+          cd apps/web && pnpm build
+          cd ../server && pnpm build
+
+      - name: Create deployment package
+        run: |
+          mkdir -p release-package
+          cp -r apps/web/.next release-package/frontend
+          cp -r apps/server/dist release-package/backend
+          cp docker-compose.yml release-package/
+          cp deploy.sh release-package/
+          cp README.md release-package/
+          tar -czf vibe-kanban-${{ needs.create-release.outputs.version }}.tar.gz release-package
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./vibe-kanban-${{ needs.create-release.outputs.version }}.tar.gz
+          asset_name: vibe-kanban-${{ needs.create-release.outputs.version }}.tar.gz
+          asset_content_type: application/gzip
+
+  publish-summary:
+    needs: [create-release, build-docker-images, create-artifacts]
+    runs-on: ubuntu-latest
+    if: success()
+
+    steps:
+      - name: Create summary
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+          # 🎉 Release ${{ needs.create-release.outputs.version }} Published
+
+          ## 📦 Docker Images
+
+          ### Main Application
+          \`\`\`bash
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.create-release.outputs.version }}
+          \`\`\`
+
+          ### Service Images
+          - Frontend: \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ needs.create-release.outputs.version }}\`
+          - Backend: \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ needs.create-release.outputs.version }}\`
+
+          ## 🚀 Deployment
+
+          ### Using Docker Compose
+          \`\`\`yaml
+          services:
+            app:
+              image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.create-release.outputs.version }}
+              ports:
+                - "3000:3000"
+                - "3001:3001"
+                - "3002:3002"
+          \`\`\`
+
+          ### Using Docker Run
+          \`\`\`bash
+          docker run -d \\
+            --name vibe-kanban \\
+            -p 3000:3000 -p 3001:3001 -p 3002:3002 \\
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.create-release.outputs.version }}
+          \`\`\`
+
+          ## 📄 Release Notes
+
+          View full release notes: https://github.com/${{ github.repository }}/releases/tag/${{ needs.create-release.outputs.version }}
+          EOF

@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  output: 'standalone',
   transpilePackages: ['@tldraw/tldraw', '@tldraw/sync'],
   webpack: (config) => {
     config.externals.push({

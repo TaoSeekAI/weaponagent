@@ -1,7 +1,8 @@
 # Simple multi-service Dockerfile for development
 FROM node:20-alpine
 
-RUN apk add --no-cache python3 make g++ bash
+# Install build dependencies including python3-setuptools for distutils
+RUN apk add --no-cache python3 py3-setuptools python3-dev make g++ bash
 
 WORKDIR /app
 

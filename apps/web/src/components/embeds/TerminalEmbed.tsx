@@ -22,8 +22,11 @@ export function TerminalEmbed({ shape, roomId = 'default' }: TerminalEmbedProps)
     Promise.all([
       import('xterm'),
       import('xterm-addon-fit'),
-      import('xterm/css/xterm.css'),
     ]).then(([{ Terminal }, { FitAddon }]) => {
+      // Import CSS separately to avoid TypeScript errors
+      import('xterm/css/xterm.css').catch(() => {
+        // CSS import might fail in SSR, ignore
+      })
       const term = new Terminal({
         cursorBlink: true,
         fontSize: 14,

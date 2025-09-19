@@ -12,7 +12,7 @@
     "@google/model-viewer": "^3.4.0",
     "@tiptap/extension-collaboration": "^2.1.13",
     "@tiptap/extension-collaboration-cursor": "^2.1.13",
-    "@tiptap/pm": "^2.1.13",
+    "@tiptap/pm": "^3.4.4",
     "@tiptap/react": "^2.1.13",
     "@tiptap/starter-kit": "^2.1.13",
     "@tldraw/sync": "^2.0.0",

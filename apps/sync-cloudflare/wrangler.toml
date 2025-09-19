@@ -1,0 +1,21 @@
+name = "vibe-kanban-sync"
+main = "src/index.ts"
+compatibility_date = "2023-12-01"
+
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "RoomDurableObject"
+
+[[durable_objects.migrations]]
+tag = "v1"
+new_classes = ["RoomDurableObject"]
+
+[[r2_buckets]]
+binding = "STORAGE"
+bucket_name = "vibe-kanban-storage"
+
+[env.production]
+vars = { ENVIRONMENT = "production" }
+
+[env.development]
+vars = { ENVIRONMENT = "development" }

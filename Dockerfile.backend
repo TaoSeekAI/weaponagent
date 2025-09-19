@@ -1,0 +1,32 @@
+FROM node:20-alpine AS deps
+RUN apk add --no-cache python3 make g++ libc6-compat
+WORKDIR /app
+
+COPY apps/server/package.json ./
+RUN npm ci --only=production
+
+FROM node:20-alpine AS builder
+RUN apk add --no-cache python3 make g++
+WORKDIR /app
+COPY apps/server/ ./
+COPY --from=deps /app/node_modules ./node_modules
+RUN npm run build
+
+FROM node:20-alpine AS runner
+RUN apk add --no-cache python3 make g++
+WORKDIR /app
+
+ENV NODE_ENV production
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 backend
+
+COPY --from=builder --chown=backend:nodejs /app/dist ./dist
+COPY --from=builder --chown=backend:nodejs /app/node_modules ./node_modules
+COPY --from=deps --chown=backend:nodejs /app/package.json ./
+
+USER backend
+
+EXPOSE 3001 3002
+
+CMD ["node", "dist/index.js"]

@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@google/model-viewer": "^3.4.0",
+    "@google/model-viewer": "^4.1.0",
     "@tiptap/extension-collaboration": "^2.1.13",
     "@tiptap/extension-collaboration-cursor": "^2.1.13",
     "@tiptap/pm": "^2.1.13",

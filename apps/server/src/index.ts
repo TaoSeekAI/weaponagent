@@ -27,7 +27,7 @@ setupSyncHandlers(io)
 
 // Hocuspocus server for Tiptap collaboration
 const hocuspocus = new Hocuspocus({
-  port: 3002,
+  port: 20102,
   onAuthenticate: async (data) => {
     // Simple auth placeholder
     return {
@@ -53,12 +53,12 @@ app.get('/health', (req, res) => {
 })
 
 // Start servers
-const PORT = process.env.PORT || 3001
+const PORT = process.env.PORT || 20100
 
 httpServer.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
   console.log(`- HTTP/WebSocket: http://localhost:${PORT}`)
-  console.log(`- Hocuspocus: ws://localhost:3002`)
+  console.log(`- Hocuspocus: ws://localhost:20102`)
 })
 
 // Graceful shutdown

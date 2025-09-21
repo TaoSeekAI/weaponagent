@@ -1,9 +1,8 @@
 # Vibe Kanban - Collaborative Canvas MVP
 
-![CI](https://github.com/yourusername/vibe-kanban/workflows/CI%20Pipeline/badge.svg)
-![Docker Build](https://github.com/yourusername/vibe-kanban/workflows/Build%20and%20Push%20Docker%20Image/badge.svg)
-![Release](https://github.com/yourusername/vibe-kanban/workflows/Release/badge.svg)
-[![Docker Image](https://img.shields.io/badge/docker-ghcr.io-blue)](https://github.com/yourusername/vibe-kanban/pkgs/container/vibe-kanban)
+![CI](https://github.com/TaoSeekAI/weaponagent/workflows/CI%20Pipeline/badge.svg?branch=vk-5636-mvp)
+![Docker Build](https://github.com/TaoSeekAI/weaponagent/workflows/Build%20and%20Push%20Docker%20Image/badge.svg?branch=vk-5636-mvp)
+[![Docker Image](https://img.shields.io/badge/docker-ghcr.io-blue)](https://github.com/TaoSeekAI/weaponagent/pkgs/container/weaponagent)
 
 基于 tldraw 的实时协作无限画布应用，支持 3D 模型查看、Web 终端、协作文档编辑等功能。
 
@@ -47,8 +46,8 @@ npm install
 pnpm dev
 
 # 或分别启动
-cd apps/web && pnpm dev    # 前端 http://localhost:3000
-cd apps/server && pnpm dev  # 后端 http://localhost:3001
+cd apps/web && PORT=20101 pnpm dev    # 前端 http://localhost:20101
+cd apps/server && PORT=20100 pnpm dev  # 后端 http://localhost:20100
 ```
 
 ### 构建生产版本
@@ -62,6 +61,10 @@ pnpm start
 
 ```bash
 # 使用预构建镜像
+docker pull ghcr.io/taoseekai/weaponagent:vk-5636-mvp
+docker run -p 20301:3000 -p 20300:3001 ghcr.io/taoseekai/weaponagent:vk-5636-mvp
+
+# 或使用本地构建
 docker pull ghcr.io/yourusername/vibe-kanban:latest
 docker run -d -p 3000:3000 -p 3001:3001 -p 3002:3002 ghcr.io/yourusername/vibe-kanban:latest
 

@@ -1,8 +1,8 @@
-# Simple multi-service Dockerfile for development
-FROM node:20-alpine
+# Multi-service Dockerfile for Vibe Kanban MVP
+FROM node:20-alpine AS base
 
 # Install build dependencies including python3-setuptools for distutils
-RUN apk add --no-cache python3 py3-setuptools python3-dev make g++ bash
+RUN apk add --no-cache python3 py3-pip make g++ bash git
 
 WORKDIR /app
 
@@ -31,8 +31,11 @@ WORKDIR /app
 
 # Create startup script
 RUN echo '#!/bin/sh' > /start.sh && \
-    echo 'cd /app/apps/server && node dist/index.js &' >> /start.sh && \
-    echo 'cd /app/apps/web && npm start' >> /start.sh && \
+    echo 'echo "Starting backend server..."' >> /start.sh && \
+    echo 'cd /app/apps/server && PORT=3001 node dist/index.js &' >> /start.sh && \
+    echo 'sleep 3' >> /start.sh && \
+    echo 'echo "Starting frontend server..."' >> /start.sh && \
+    echo 'cd /app/apps/web && PORT=3000 npm start' >> /start.sh && \
     chmod +x /start.sh
 
 EXPOSE 3000 3001 3002

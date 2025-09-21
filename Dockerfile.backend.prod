@@ -1,0 +1,54 @@
+# Backend production Dockerfile
+FROM node:20-alpine AS builder
+
+# Install build dependencies including Python for node-pty
+RUN apk add --no-cache python3 py3-pip make g++ bash
+
+WORKDIR /app
+
+# Copy package files
+COPY apps/server/package*.json ./
+COPY apps/server/pnpm-lock.yaml* ./
+COPY apps/server/yarn.lock* ./
+
+# Install dependencies
+RUN if [ -f pnpm-lock.yaml ]; then \
+      npm install -g pnpm && pnpm install --frozen-lockfile; \
+    elif [ -f yarn.lock ]; then \
+      yarn install --frozen-lockfile; \
+    elif [ -f package-lock.json ]; then \
+      npm ci; \
+    else \
+      npm install; \
+    fi
+
+# Copy source code
+COPY apps/server/ ./
+
+# Build the application
+RUN npm run build || npx tsc
+
+FROM node:20-alpine AS runner
+
+# Install runtime dependencies
+RUN apk add --no-cache python3 bash
+
+WORKDIR /app
+
+ENV NODE_ENV production
+
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 backend
+
+# Copy built application
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
+
+USER backend
+
+EXPOSE 3001 3002
+
+# Start the server
+CMD ["node", "dist/index.js"]

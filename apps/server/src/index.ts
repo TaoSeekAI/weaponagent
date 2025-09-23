@@ -9,15 +9,27 @@ import { Hocuspocus } from '@hocuspocus/server'
 const app = express()
 const httpServer = createServer(app)
 
-// CORS configuration
-app.use(cors())
+// CORS configuration - Allow both HTTP and HTTPS origins
+const corsOrigins = [
+  process.env.FRONTEND_URL,
+  'https://infiniteboard.zchtech.ai',
+  'http://infiniteboard.zchtech.ai',
+  'http://localhost:20101',
+  'http://localhost:3000'
+].filter(Boolean)
+
+app.use(cors({
+  origin: corsOrigins,
+  credentials: true,
+}))
 app.use(express.json())
 
 // Socket.IO server for terminals and sync
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: corsOrigins,
     methods: ['GET', 'POST'],
+    credentials: true,
   },
 })
 

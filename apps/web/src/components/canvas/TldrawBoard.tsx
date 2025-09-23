@@ -122,7 +122,7 @@ export function TldrawBoard({ roomId }: TldrawBoardProps) {
         const file = (e.target as HTMLInputElement).files?.[0]
         if (file) {
           const url = URL.createObjectURL(file)
-          const center = editor.getViewportPageCenter()
+          const center = editor.getViewportScreenCenter()
 
           const embedUrl = `data:text/html,${encodeURIComponent(`
             <!DOCTYPE html>

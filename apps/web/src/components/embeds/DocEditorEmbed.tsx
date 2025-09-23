@@ -52,7 +52,7 @@ export function DocEditorEmbed({ shape, roomId = 'default' }: DocEditorEmbedProp
     if (!editor || !mounted) return
 
     const wsProvider = new WebsocketProvider(
-      process.env.NEXT_PUBLIC_COLLAB_WS_URL || 'ws://infiniteboardserver.zchtech.ai:20102',
+      process.env.NEXT_PUBLIC_COLLAB_WS_URL || 'ws://localhost:20102',
       `doc-${roomId}-${shape.id}`,
       ydoc
     )

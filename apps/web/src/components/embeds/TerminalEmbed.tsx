@@ -44,7 +44,7 @@ export function TerminalEmbed({ shape, roomId = 'default' }: TerminalEmbedProps)
       fitAddon.fit()
 
       // Connect to backend
-      const socketConnection = io(process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:20100', {
+      const socketConnection = io(process.env.NEXT_PUBLIC_WS_URL || 'https://infiniteboardserver.zchtech.ai', {
         transports: ['websocket'],
       })
 

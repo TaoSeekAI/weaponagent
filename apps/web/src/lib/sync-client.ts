@@ -17,7 +17,7 @@ export class SyncClient {
     this.editor = editor
 
     // Connect to sync server
-    this.socket = io(process.env.NEXT_PUBLIC_SYNC_URL || 'http://localhost:20100', {
+    this.socket = io(process.env.NEXT_PUBLIC_SYNC_URL || 'https://infiniteboardserver.zchtech.ai', {
       transports: ['websocket'],
       query: {
         roomId: this.roomId,

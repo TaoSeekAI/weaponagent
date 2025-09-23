@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { TLEmbedShape } from '@tldraw/tldraw'
 
 interface ModelViewerEmbedProps {
-  shape: TLEmbedShape
+  url: string
+  width: number
+  height: number
   onChangeUrl?: (url: string) => void
 }
 
@@ -31,10 +32,8 @@ declare global {
   }
 }
 
-export function ModelViewerEmbed({ shape, onChangeUrl }: ModelViewerEmbedProps) {
-  const [modelUrl, setModelUrl] = useState(
-    shape.props.url || '/models/sample.glb'
-  )
+export function ModelViewerEmbed({ url, width, height, onChangeUrl }: ModelViewerEmbedProps) {
+  const [modelUrl, setModelUrl] = useState(url || '')
   const [isLoading, setIsLoading] = useState(true)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -56,14 +55,14 @@ export function ModelViewerEmbed({ shape, onChangeUrl }: ModelViewerEmbedProps) 
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full bg-gray-100">
+      <div className="flex items-center justify-center bg-gray-100" style={{ width, height }}>
         <p>Loading 3D viewer...</p>
       </div>
     )
   }
 
   return (
-    <div ref={containerRef} className="relative w-full h-full bg-gray-50">
+    <div ref={containerRef} className="relative bg-gray-50" style={{ width, height }}>
       <model-viewer
         src={modelUrl}
         camera-controls

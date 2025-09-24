@@ -1,0 +1,40 @@
+module.exports = {
+  apps: [
+    {
+      name: 'infiniteboard-frontend',
+      script: 'npm',
+      args: 'run start',
+      cwd: '/var/tmp/vibe-kanban/worktrees/vk-5636-mvp/apps/web',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 20101,
+      },
+      instances: 1,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '1G',
+      error_file: '/var/tmp/vibe-kanban/worktrees/vk-5636-mvp/logs/frontend-error.log',
+      out_file: '/var/tmp/vibe-kanban/worktrees/vk-5636-mvp/logs/frontend-out.log',
+      log_file: '/var/tmp/vibe-kanban/worktrees/vk-5636-mvp/logs/frontend-combined.log',
+      time: true,
+    },
+    {
+      name: 'infiniteboard-backend',
+      script: 'npm',
+      args: 'run dev',
+      cwd: '/var/tmp/vibe-kanban/worktrees/vk-5636-mvp/apps/server',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 20100,
+      },
+      instances: 1,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '1G',
+      error_file: '/var/tmp/vibe-kanban/worktrees/vk-5636-mvp/logs/backend-error.log',
+      out_file: '/var/tmp/vibe-kanban/worktrees/vk-5636-mvp/logs/backend-out.log',
+      log_file: '/var/tmp/vibe-kanban/worktrees/vk-5636-mvp/logs/backend-combined.log',
+      time: true,
+    },
+  ],
+};

@@ -8,6 +8,7 @@ import {
 } from '@tldraw/tldraw'
 import '@tldraw/tldraw/tldraw.css'
 import { useSyncClient } from '@/lib/sync-client'
+import { EditingTraces } from './EditingTraces'
 
 interface TldrawBoardProps {
   roomId: string
@@ -16,6 +17,10 @@ interface TldrawBoardProps {
 export function TldrawBoard({ roomId }: TldrawBoardProps) {
   const [editor, setEditor] = useState<Editor | null>(null)
   const syncClient = useSyncClient(roomId)
+
+  // Generate unique user ID and name
+  const [userId] = useState(() => `user-${Math.random().toString(36).substr(2, 9)}`)
+  const [userName] = useState(() => `User ${Math.floor(Math.random() * 1000)}`)
 
   // Handle file drop
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -213,18 +218,27 @@ export function TldrawBoard({ roomId }: TldrawBoardProps) {
 
       {/* Add 3D Model button */}
       {editor && (
-        <button
-          onClick={() => (editor as any).add3DModel?.()}
-          className="absolute top-4 right-4 bg-blue-500 text-white px-4 py-2 rounded shadow-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
-          title="Add 3D Model (Ctrl+3)"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M12 2L2 7L12 12L22 7L12 2Z" />
-            <path d="M2 17L12 22L22 17" />
-            <path d="M2 12L12 17L22 12" />
-          </svg>
-          Add 3D Model
-        </button>
+        <>
+          <button
+            onClick={() => (editor as any).add3DModel?.()}
+            className="absolute top-4 right-4 bg-blue-500 text-white px-4 py-2 rounded shadow-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
+            title="Add 3D Model (Ctrl+3)"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 2L2 7L12 12L22 7L12 2Z" />
+              <path d="M2 17L12 22L22 17" />
+              <path d="M2 12L12 17L22 12" />
+            </svg>
+            Add 3D Model
+          </button>
+
+          {/* User editing traces */}
+          <EditingTraces
+            editor={editor}
+            userId={userId}
+            userName={userName}
+          />
+        </>
       )}
     </div>
   )

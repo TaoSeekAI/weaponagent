@@ -41,94 +41,121 @@ export function EditingTraces({ editor, userId, userName }: EditingTracesProps) 
 
     // Listen to store changes
     const handleChange = (changes: any) => {
+      if (!changes) return
+
       const now = Date.now()
 
-      Object.entries(changes.added).forEach(([id, record]: [string, any]) => {
-        if (record.typeName === 'shape') {
-          const trace: EditTrace = {
-            id: `${userId}-${id}-${now}`,
-            userId,
-            userName,
-            action: 'create',
-            shapeId: id,
-            timestamp: now,
-            color: userColor
+      // Handle added shapes
+      if (changes.added) {
+        Object.entries(changes.added).forEach(([id, record]: [string, any]) => {
+          if (record?.typeName === 'shape') {
+            const trace: EditTrace = {
+              id: `${userId}-${id}-${now}`,
+              userId,
+              userName,
+              action: 'create',
+              shapeId: id,
+              timestamp: now,
+              color: userColor
+            }
+            tracesRef.current.set(trace.id, trace)
+            setTraces(Array.from(tracesRef.current.values()))
+
+            // Add visual indicator
+            addVisualIndicator(trace)
           }
-          tracesRef.current.set(trace.id, trace)
-          setTraces(Array.from(tracesRef.current.values()))
+        })
+      }
 
-          // Add visual indicator
-          addVisualIndicator(trace)
-        }
-      })
+      // Handle updated shapes
+      if (changes.updated) {
+        Object.entries(changes.updated).forEach(([id, records]: [string, any]) => {
+          if (Array.isArray(records) && records.length >= 2) {
+            const [oldRecord, newRecord] = records
+            if (newRecord?.typeName === 'shape') {
+              const trace: EditTrace = {
+                id: `${userId}-${id}-${now}`,
+                userId,
+                userName,
+                action: 'update',
+                shapeId: id,
+                timestamp: now,
+                color: userColor
+              }
+              tracesRef.current.set(trace.id, trace)
+              setTraces(Array.from(tracesRef.current.values()))
 
-      Object.entries(changes.updated).forEach(([id, records]: [string, any]) => {
-        const [oldRecord, newRecord] = records as [any, any]
-        if (newRecord?.typeName === 'shape') {
-          const trace: EditTrace = {
-            id: `${userId}-${id}-${now}`,
-            userId,
-            userName,
-            action: 'update',
-            shapeId: id,
-            timestamp: now,
-            color: userColor
+              // Add visual indicator
+              addVisualIndicator(trace)
+            }
           }
-          tracesRef.current.set(trace.id, trace)
-          setTraces(Array.from(tracesRef.current.values()))
+        })
+      }
 
-          // Add visual indicator
-          addVisualIndicator(trace)
-        }
-      })
-
-      Object.entries(changes.removed).forEach(([id, record]: [string, any]) => {
-        if (record.typeName === 'shape') {
-          const trace: EditTrace = {
-            id: `${userId}-${id}-${now}`,
-            userId,
-            userName,
-            action: 'delete',
-            shapeId: id,
-            timestamp: now,
-            color: userColor
+      // Handle removed shapes
+      if (changes.removed) {
+        Object.entries(changes.removed).forEach(([id, record]: [string, any]) => {
+          if (record?.typeName === 'shape') {
+            const trace: EditTrace = {
+              id: `${userId}-${id}-${now}`,
+              userId,
+              userName,
+              action: 'delete',
+              shapeId: id,
+              timestamp: now,
+              color: userColor
+            }
+            tracesRef.current.set(trace.id, trace)
+            setTraces(Array.from(tracesRef.current.values()))
           }
-          tracesRef.current.set(trace.id, trace)
-          setTraces(Array.from(tracesRef.current.values()))
-        }
-      })
+        })
+      }
     }
 
     const addVisualIndicator = (trace: EditTrace) => {
-      const shape = editor.getShape(trace.shapeId as TLShapeId)
-      if (!shape) return
+      try {
+        const shape = editor.getShape(trace.shapeId as TLShapeId)
+        if (!shape) return
 
-      const bounds = editor.getShapeGeometry(shape).bounds
-      const pagePoint = editor.getShapePageTransform(shape).point()
+        const geometry = editor.getShapeGeometry(shape)
+        if (!geometry) return
 
-      // Create a temporary highlight effect
-      const indicatorId = createShapeId()
-      editor.createShape({
-        id: indicatorId,
-        type: 'geo',
-        x: pagePoint.x - 5,
-        y: pagePoint.y - 5,
-        props: {
-          w: bounds.width + 10,
-          h: bounds.height + 10,
-          geo: 'rectangle',
-          color: 'violet',
-          fill: 'none',
-          dash: 'draw',
-          size: 's',
-          opacity: 0.5,
-        },
-      })
+        const bounds = geometry.bounds
+        const transform = editor.getShapePageTransform(shape)
+        if (!transform) return
 
-      // Remove indicator after 2 seconds
-      setTimeout(() => {
-        editor.deleteShape(indicatorId)
-      }, 2000)
+        const pagePoint = transform.point()
+
+        // Create a temporary highlight effect
+        const indicatorId = createShapeId()
+        editor.createShape({
+          id: indicatorId,
+          type: 'geo',
+          x: pagePoint.x - 5,
+          y: pagePoint.y - 5,
+          props: {
+            w: bounds.width + 10,
+            h: bounds.height + 10,
+            geo: 'rectangle',
+            color: 'violet',
+            fill: 'none',
+            dash: 'draw',
+            size: 's',
+            opacity: 0.5,
+          },
+        })
+
+        // Remove indicator after 2 seconds
+        setTimeout(() => {
+          try {
+            editor.deleteShape(indicatorId)
+          } catch (e) {
+            // Shape may have been deleted already
+          }
+        }, 2000)
+      } catch (error) {
+        console.warn('Could not add visual indicator:', error)
+      }
     }
 
     // Clean old traces (older than 5 minutes)
